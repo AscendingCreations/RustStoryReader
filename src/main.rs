@@ -174,6 +174,33 @@ impl Renderer {
             String::from(*iter.next().expect("expected 2 names, got 1")),
         ))
     }
+
+    fn iftokenize(
+        &self,
+        line: String,
+        pat: &str,
+    ) -> Result<(usize, String, String, String), String> {
+        let arr: Vec<&str> = line.split(pat).collect();
+
+        if arr.len() < 2 || arr.len() > 3 {
+            return Err(format!(
+                "The Token {} contained {} but should have 2 or 3 parts at line {}.
+            It should be seperated by {}",
+                line,
+                arr.len(),
+                self.index,
+                pat,
+            ));
+        }
+
+        let mut iter = arr.iter();
+        Ok((
+            arr.len(),
+            String::from(*iter.next().expect("expected 2 names, got 0")),
+            String::from(*iter.next().expect("expected 2 names, got 1")),
+            String::from(*iter.next().unwrap_or(&"")),
+        ))
+    }
 }
 
 fn parse_variables(line: String) -> Vec<String> {
@@ -222,6 +249,11 @@ fn main() {
                 story.index += 1;
                 continue;
             }
+            "|" => {
+                println!("");
+                story.index += 1;
+                continue;
+            }
             // Process goto
             "#" => {
                 let label_name = text.replace("#", "");
@@ -236,56 +268,60 @@ fn main() {
             }
             // Process IF statement
             "!" => {
-                let (mut left, right) = story
-                    .tokenize(story.lines[story.index].clone(), ":")
+                let (count, mut left, mid, right) = story
+                    .iftokenize(story.lines[story.index].clone(), ":")
                     .unwrap();
                 left.remove(0);
                 left = story.process_variables(left);
 
-                if story.process_expression(left) {
-                    let exp = right.trim();
+                let mut exp = mid.trim();
 
-                    match &exp[0..1] {
-                        "#" => {
-                            let label = exp.replace("#", "");
-                            let pos = match story.labels.get(&label) {
-                                Some(v) => v,
-                                None => {
-                                    panic!("Goto {} Missing. Found on line {}", label, story.index);
-                                }
-                            };
-
-                            story.index = *pos;
-                            continue;
-                        }
-                        "@" => {
-                            let (l, r) = story.tokenize(exp.to_string(), "=").unwrap();
-
-                            if !story.variables.contains_key(&l[1..]) {
-                                panic!("A Variable must be initalized outside of a if statement before it can be used.
-                                The Variable {} on line {} is not Initalized yet.", &l[1..], story.index);
-                            }
-
-                            let p = story.process_variables(r);
-
-                            match tinyexpr::interp(&p[..]) {
-                                Ok(v) => {
-                                    //update as variable
-                                    *story.variables.get_mut(&l[1..]).unwrap() = v.to_string();
-                                }
-                                Err(_) => {
-                                    //no calulations done becuase its a string so process as string.
-                                    *story.variables.get_mut(&l[1..]).unwrap() = p.clone();
-                                }
-                            };
-                            story.index += 1;
-                            continue;
-                        }
-                        _ => println!("{}", exp),
+                if !story.process_expression(left) {
+                    if count == 3 {
+                        exp = right.trim();
+                    } else {
+                        story.index += 1;
+                        continue;
                     }
-                } else {
-                    story.index += 1;
-                    continue;
+                }
+
+                match &exp[0..1] {
+                    "#" => {
+                        let label = exp.replace("#", "");
+                        let pos = match story.labels.get(&label) {
+                            Some(v) => v,
+                            None => {
+                                panic!("Goto {} Missing. Found on line {}", label, story.index);
+                            }
+                        };
+
+                        story.index = *pos;
+                        continue;
+                    }
+                    "@" => {
+                        let (l, r) = story.tokenize(exp.to_string(), "=").unwrap();
+
+                        if !story.variables.contains_key(&l[1..]) {
+                            panic!("A Variable must be initalized outside of a if statement before it can be used.
+                            The Variable {} on line {} is not Initalized yet.", &l[1..], story.index);
+                        }
+
+                        let p = story.process_variables(r);
+
+                        match tinyexpr::interp(&p[..]) {
+                            Ok(v) => {
+                                //update as variable
+                                *story.variables.get_mut(&l[1..]).unwrap() = v.to_string();
+                            }
+                            Err(_) => {
+                                //no calulations done becuase its a string so process as string.
+                                *story.variables.get_mut(&l[1..]).unwrap() = p.clone();
+                            }
+                        };
+                        story.index += 1;
+                        continue;
+                    }
+                    _ => println!("{}", exp),
                 }
             }
             // Process variables
@@ -347,6 +383,13 @@ fn main() {
                     }
 
                     ret = ret.replace("\r\n", "");
+
+                    if ret.chars().any(char::is_alphabetic) {
+                        println!("You must enter a NUMBER between 1 and {}", q);
+                        ret.clear();
+                        continue;
+                    }
+
                     input = match FromStr::from_str(&ret[..]) {
                         Ok(i) => i,
                         Err(_) => {
@@ -354,6 +397,10 @@ fn main() {
                             0
                         }
                     };
+
+                    if input < 1 || input > q {
+                        println!("You must enter a number between 1 and {}", q);
+                    }
                 }
 
                 let label = gotos.get(input - 1).unwrap();
@@ -381,18 +428,52 @@ fn main() {
                     The Variable {} on line {} is not Initalized yet.", &right[1..], story.index);
                 }
 
-                println!("\n{}", &left[1..]);
+                match &left[1..2] {
+                    "i" => {
+                        let l = true;
 
-                let b = match io::stdin().read_line(&mut ret) {
-                    Ok(_) => true,
-                    Err(_) => false,
-                };
+                        while l {
+                            println!("\n{}", &left[2..]);
 
-                if !b {
-                    println!("You must enter something.");
-                    continue;
+                            let b = match io::stdin().read_line(&mut ret) {
+                                Ok(_) => true,
+                                Err(_) => false,
+                            };
+
+                            if !b {
+                                println!("You must enter something.");
+                                continue;
+                            }
+
+                            if ret.chars().any(char::is_alphabetic) {
+                                println!("You may only enter in a Number. Please try again.");
+                                ret.clear();
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    "s" => {
+                        println!("\n{}", &left[2..]);
+
+                        let b = match io::stdin().read_line(&mut ret) {
+                            Ok(_) => true,
+                            Err(_) => false,
+                        };
+
+                        if !b {
+                            println!("You must enter something.");
+                            continue;
+                        }
+                    }
+                    _ => panic!(
+                        "Missing a i or s for input type at line {}. Example: ^i hows many?",
+                        story.index
+                    ),
                 }
 
+                ret = ret.replace("\r\n", "");
                 *story.variables.get_mut(&right[1..]).unwrap() = ret.clone();
                 story.index += 1;
                 continue;

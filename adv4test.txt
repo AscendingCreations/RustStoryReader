@@ -1,17 +1,16 @@
 :start
 @count=0
-@total=0
+@total=randint(1,60) + 3
 @total
-^How many?:@total
+^iHow many?:@total
 !@total==0:#start
 
 :loop
 @count=@count+1
 @sin=sin(@count)
 This is the count: @count  @sin
-!@count==@total:#ask
-#loop
-
+!@count==@total:#ask:#loop
+:skip
 :ask
 ? try agian?:#start
 ? exit?:#leave
