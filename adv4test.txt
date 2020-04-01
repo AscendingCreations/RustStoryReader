@@ -1,0 +1,19 @@
+:start
+@count=0
+@total=0
+@total
+^How many?:@total
+!@total==0:#start
+
+:loop
+@count=@count+1
+@sin=sin(@count)
+This is the count: @count  @sin
+!@count==@total:#ask
+#loop
+
+:ask
+? try agian?:#start
+? exit?:#leave
+:leave
+Done!
