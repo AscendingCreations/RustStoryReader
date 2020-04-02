@@ -2,7 +2,7 @@
 @count=0
 @total=randint(1,60) + 3
 @total
-rand01
+this is random num# rand01
 ^iHow many?:@total
 !@total==0:#start
 
