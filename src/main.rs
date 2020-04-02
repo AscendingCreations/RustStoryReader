@@ -478,12 +478,15 @@ fn main() {
                 story.index += 1;
                 continue;
             }
-            // Ignore Regular text so we can print it.
+            // process Variables and then process any internal functions to get data. otherwise ret original.
             _ => {
-                println!(
-                    "{}",
-                    story.process_variables(story.lines[story.index].clone())
-                );
+                let p = story.process_variables(story.lines[story.index].clone());
+                let s = match tinyexpr::interp(&p[..]) {
+                    Ok(v) => v.to_string(),
+                    Err(_) => p.clone(),
+                };
+
+                println!("{}", s);
                 story.index += 1;
             }
         }
