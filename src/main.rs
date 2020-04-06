@@ -257,6 +257,7 @@ fn main() {
             // Process goto
             "#" => {
                 let label_name = text.replace("#", "");
+                let label_name = label_name.replace(":", "");
                 match story.labels.get(&label_name) {
                     Some(v) => story.index = *v,
                     None => {
@@ -356,7 +357,7 @@ fn main() {
                 let mut gotos: Vec<String> = Vec::new();
                 let mut q = 0;
 
-                while &story.lines[story.index][0..1] == "?" {
+                while story.lines[story.index] != "" && &story.lines[story.index][0..1] == "?" {
                     let (left, mut right) = story
                         .tokenize(story.lines[story.index].clone(), ":")
                         .unwrap();
@@ -368,9 +369,10 @@ fn main() {
                 }
 
                 let mut input: usize = 0;
+                let mut ret: String = String::new();
 
                 while input < 1 || input > q {
-                    let mut ret: String = String::new();
+                    ret.clear();
 
                     let b = match io::stdin().read_line(&mut ret) {
                         Ok(_) => true,
@@ -390,16 +392,24 @@ fn main() {
                         continue;
                     }
 
-                    input = match FromStr::from_str(&ret[..]) {
-                        Ok(i) => i,
+                    input = match i32::from_str(&ret[..]) {
+                        Ok(i) => i as usize,
                         Err(_) => {
-                            println!("You must enter a number between 1 and {}", q);
-                            0
+                            println!(
+                                "You must enter a number between 1 and {}, you entered {}",
+                                q,
+                                &ret[..]
+                            );
+                            0 as usize
                         }
                     };
 
                     if input < 1 || input > q {
-                        println!("You must enter a number between 1 and {}", q);
+                        println!(
+                            "You must enter a number between 1 and {}, you entered {}",
+                            q,
+                            &ret[..]
+                        );
                     }
                 }
 
