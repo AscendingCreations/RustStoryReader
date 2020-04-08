@@ -9,6 +9,7 @@ this is random num# rand01
 :loop
 @count=@count+1
 @sin=sin(@count)
+~
 This is the count: @count  @sin
 !@count==@total:#ask:#loop
 :skip

@@ -3,7 +3,8 @@ use nom::{multi::*, sequence::*};
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
-use std::{env, fs::File, io, path::Path, str::FromStr};
+use std::{env, fs::File, path::Path, str::FromStr};
+use console::Term;
 
 #[derive(Debug)]
 struct Renderer {
@@ -228,7 +229,8 @@ fn main() {
     let path = Path::new(&args[1]);
     let display = path.display();
     let mut story = Renderer::new();
-
+    let term = Term::stdout();
+    term.set_title("This is Story time");
     let file = match File::open(&path) {
         Err(why) => panic!("couldn't open {}: {}", display, why),
         Ok(file) => file,
@@ -247,12 +249,10 @@ fn main() {
         match &text[0..1] {
             "\n" | "\r" | ":" | "*" => {
                 story.index += 1;
-                continue;
             }
             "|" => {
                 println!("");
                 story.index += 1;
-                continue;
             }
             // Process goto
             "#" => {
@@ -264,8 +264,6 @@ fn main() {
                         panic!("Goto {} Missing. line {}", label_name, story.index);
                     }
                 };
-
-                continue;
             }
             // Process IF statement
             "!" => {
@@ -350,7 +348,6 @@ fn main() {
                 };
 
                 story.index += 1;
-                continue;
             }
             // Process questions
             "?" => {
@@ -369,22 +366,16 @@ fn main() {
                 }
 
                 let mut input: usize = 0;
-                let mut ret: String = String::new();
+                let mut ret;
 
                 while input < 1 || input > q {
-                    ret.clear();
-
-                    let b = match io::stdin().read_line(&mut ret) {
-                        Ok(_) => true,
-                        Err(_) => false,
+                    ret = match term.read_line() {
+                        Ok(s) => s.replace("\r\n", ""),
+                        Err(_) => {
+                            println!("You must enter a number between 1 and {}", q);
+                            continue;
+                        },
                     };
-
-                    if !b {
-                        println!("You must enter a number between 1 and {}", q);
-                        continue;
-                    }
-
-                    ret = ret.replace("\r\n", "");
 
                     if ret.chars().any(char::is_alphabetic) {
                         println!("You must enter a NUMBER between 1 and {}", q);
@@ -423,8 +414,6 @@ fn main() {
                         );
                     }
                 };
-
-                continue;
             }
             // Process inputs
             "^" => {
@@ -445,19 +434,16 @@ fn main() {
                         while l {
                             println!("\n{}", &left[2..]);
 
-                            let b = match io::stdin().read_line(&mut ret) {
-                                Ok(_) => true,
-                                Err(_) => false,
+                            ret = match term.read_line() {
+                                Ok(s) => s.replace("\r\n", ""),
+                                Err(_) => {
+                                    println!("You must enter a number.");
+                                    continue;
+                                },
                             };
-
-                            if !b {
-                                println!("You must enter something.");
-                                continue;
-                            }
 
                             if ret.chars().any(char::is_alphabetic) {
                                 println!("You may only enter in a Number. Please try again.");
-                                ret.clear();
                                 continue;
                             } else {
                                 break;
@@ -467,15 +453,13 @@ fn main() {
                     "s" => {
                         println!("\n{}", &left[2..]);
 
-                        let b = match io::stdin().read_line(&mut ret) {
-                            Ok(_) => true,
-                            Err(_) => false,
+                        ret = match term.read_line() {
+                            Ok(s) => s.replace("\r\n", ""),
+                            Err(_) => {
+                                println!("You must enter something.");
+                                continue;
+                            },
                         };
-
-                        if !b {
-                            println!("You must enter something.");
-                            continue;
-                        }
                     }
                     _ => panic!(
                         "Missing a i or s for input type at line {}. Example: ^i hows many?",
@@ -483,10 +467,14 @@ fn main() {
                     ),
                 }
 
-                ret = ret.replace("\r\n", "");
                 *story.variables.get_mut(&right[1..]).unwrap() = ret.clone();
                 story.index += 1;
-                continue;
+            }
+            "~" => {
+                println!("\nPress Enter to scroll.");
+                term.read_line().unwrap();
+                term.flush().unwrap();
+                story.index += 1;
             }
             // process Variables and then process any internal functions to get data. otherwise ret original.
             _ => {
