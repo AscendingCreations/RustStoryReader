@@ -400,7 +400,7 @@ fn main() {
                                 q,
                                 &ret[..]
                             );
-                            0 as usize
+                            continue;
                         }
                     };
 
