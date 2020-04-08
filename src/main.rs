@@ -480,8 +480,12 @@ fn main() {
                 story.index += 1;
             }
             "~" => {
-                println!("\nPress Enter to scroll.");
+                println!("\nPress Enter to Continue.");
                 read_line().unwrap();
+                clear();
+                story.index += 1;
+            }
+            "`" => {
                 clear();
                 story.index += 1;
             }
