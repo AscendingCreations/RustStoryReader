@@ -379,7 +379,7 @@ fn main() {
 
                 while input < 1 || input > q {
                     ret = match read_line() {
-                        Ok(s) => s.replace("\r\n", ""),
+                        Ok(s) => s,
                         Err(_) => {
                             println!("You must enter a number between 1 and {}", q);
                             continue;
@@ -444,7 +444,7 @@ fn main() {
                             println!("\n{}", &left[2..]);
 
                             ret = match read_line() {
-                                Ok(s) => s.replace("\r\n", ""),
+                                Ok(s) => s,
                                 Err(_) => {
                                     println!("You must enter a number.");
                                     continue;
@@ -463,7 +463,7 @@ fn main() {
                         println!("\n{}", &left[2..]);
 
                         ret = match read_line() {
-                            Ok(s) => s.replace("\r\n", ""),
+                            Ok(s) => s,
                             Err(_) => {
                                 println!("You must enter something.");
                                 continue;
