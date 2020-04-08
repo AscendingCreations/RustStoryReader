@@ -3,8 +3,8 @@ use nom::{multi::*, sequence::*};
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
-use std::{env, fs::File, path::Path, str::FromStr};
-use console::Term;
+use std::{env, io, fs::File, path::Path, str::FromStr};
+use std::io::Write;
 
 #[derive(Debug)]
 struct Renderer {
@@ -204,6 +204,16 @@ impl Renderer {
     }
 }
 
+fn clear() {
+   std::io::stdout().write_all(b"\x1b[2J\x1b[1;1H").unwrap()
+}
+
+fn read_line() -> io::Result<String> {
+    let mut rv = String::new();
+    io::stdin().read_line(&mut rv).unwrap();
+    Ok(rv.replace("\r\n", "").replace("\n", ""))
+}
+
 fn parse_variables(line: String) -> Vec<String> {
     let arr: nom::IResult<&str, Vec<&str>> = many0(preceded(
         take_until("@"),
@@ -229,8 +239,7 @@ fn main() {
     let path = Path::new(&args[1]);
     let display = path.display();
     let mut story = Renderer::new();
-    let term = Term::stdout();
-    term.set_title("This is Story time");
+
     let file = match File::open(&path) {
         Err(why) => panic!("couldn't open {}: {}", display, why),
         Ok(file) => file,
@@ -369,7 +378,7 @@ fn main() {
                 let mut ret;
 
                 while input < 1 || input > q {
-                    ret = match term.read_line() {
+                    ret = match read_line() {
                         Ok(s) => s.replace("\r\n", ""),
                         Err(_) => {
                             println!("You must enter a number between 1 and {}", q);
@@ -434,7 +443,7 @@ fn main() {
                         while l {
                             println!("\n{}", &left[2..]);
 
-                            ret = match term.read_line() {
+                            ret = match read_line() {
                                 Ok(s) => s.replace("\r\n", ""),
                                 Err(_) => {
                                     println!("You must enter a number.");
@@ -453,7 +462,7 @@ fn main() {
                     "s" => {
                         println!("\n{}", &left[2..]);
 
-                        ret = match term.read_line() {
+                        ret = match read_line() {
                             Ok(s) => s.replace("\r\n", ""),
                             Err(_) => {
                                 println!("You must enter something.");
@@ -472,8 +481,8 @@ fn main() {
             }
             "~" => {
                 println!("\nPress Enter to scroll.");
-                term.read_line().unwrap();
-                term.flush().unwrap();
+                read_line().unwrap();
+                clear();
                 story.index += 1;
             }
             // process Variables and then process any internal functions to get data. otherwise ret original.
