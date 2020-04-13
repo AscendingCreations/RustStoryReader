@@ -8,3 +8,4 @@ edition = "2018"
 nom = "5.1.1"
 tinyexpr = { git = "https://git.codentium.com/Genusis/tinyexpr-rs" }
 regex = "1"
+float-cmp = "0.6"
