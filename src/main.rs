@@ -227,7 +227,7 @@ impl Renderer {
     }
 
     fn printmove(&mut self, s: String) {
-        println!("{}", self.process_variables(s.clone()));
+        println!("{}", self.process_variables(s));
         self.index += 1;
     }
 
@@ -267,7 +267,7 @@ impl Renderer {
             ),
         }
 
-        *self.variables.get_mut(&right[1..]).unwrap() = ret.clone();
+        *self.variables.get_mut(&right[1..]).unwrap() = ret;
         self.index += 1;
     }
 
@@ -347,7 +347,7 @@ impl Renderer {
     fn process_goto(&mut self, opt: Option<String>) {
         let text = match opt {
             None => self.lines[self.index].clone(),
-            Some(s) => s.clone(),
+            Some(s) => s,
         };
 
         let label = text.replace("#", "").replace(":", "");
@@ -380,7 +380,7 @@ impl Renderer {
             "\"" => {
                 let s = cond[1..cond.len()].to_string();
 
-                if !s.ends_with("\"") {
+                if !s.ends_with('"') {
                     panic!("if you start with \" you must End with \" to be able to print. Error on line {}", self.index + 1);
                 }
 
