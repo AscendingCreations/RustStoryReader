@@ -32,7 +32,7 @@ impl Renderer {
             let text = curline.unwrap();
             self.lines.push(text.clone());
 
-            if text == "" {
+            if text.is_empty() {
                 continue;
             }
 
@@ -51,11 +51,11 @@ impl Renderer {
         }
     }
 
-    fn process_variables(&self, text: String) -> String {
+    fn process_variables(&self, text: &String) -> String {
         let mut s = text.clone();
 
         for item in parse_variables(text).iter() {
-            if item != "" {
+            if !text.is_empty() {
                 let var = match self.variables.get(&item[..]) {
                     Some(v) => v,
                     None => panic!(
@@ -77,7 +77,7 @@ impl Renderer {
             Ok(v) => v as f64,
             Err(_) => {
                 isnan = true;
-                0.0 as f64
+                0.0_f64
             }
         };
 
@@ -85,7 +85,7 @@ impl Renderer {
             Ok(v) => v as f64,
             Err(_) => {
                 isnan = true;
-                0.0 as f64
+                0.0_f64
             }
         };
 
@@ -226,7 +226,7 @@ impl Renderer {
         self.index += 1;
     }
 
-    fn printmove(&mut self, s: String) {
+    fn printmove(&mut self, s: &String) {
         println!("{}", self.process_variables(s));
         self.index += 1;
     }
@@ -275,7 +275,7 @@ impl Renderer {
         let mut gotos: Vec<String> = Vec::new();
         let mut q = 0;
 
-        while self.lines[self.index] != "" && &self.lines[self.index][0..1] == "?" {
+        while !self.lines[self.index].is_empty() && &self.lines[self.index][0..1] == "?" {
             let (left, right) = self.tokenize(self.lines[self.index].clone(), ":").unwrap();
             gotos.push(right.replace("#", ""));
             println!("{}. {}", q + 1, &left[1..]);
@@ -324,7 +324,7 @@ impl Renderer {
 
         match self.tokenize(text, "=") {
             Ok((l, r)) => {
-                let p = self.process_variables(r);
+                let p = self.process_variables(&r);
                 match tinyexpr::interp(&p[..]) {
                     //update as variable
                     Ok(v) => *self.variables.get_mut(&l[1..]).unwrap() = v.to_string(),
@@ -335,7 +335,7 @@ impl Renderer {
                 self.index += 1;
             }
             Err(_) => match &opt {
-                None => self.printmove(self.lines[self.index].clone()),
+                None => self.printmove(&self.lines[self.index].clone()),
                 Some(_) => panic!(
                     "A Variable must be initalized before it can be used. Error on line {}.",
                     self.index + 1
@@ -361,7 +361,7 @@ impl Renderer {
         let (count, left, mid, right) = self
             .iftokenize(self.lines[self.index].clone(), ":")
             .unwrap();
-        let exp = self.process_variables(left[1..left.len()].to_string());
+        let exp = self.process_variables(&left[1..left.len()].to_string());
         let mut cond = mid.trim();
 
         if !self.process_expression(exp) {
@@ -384,9 +384,9 @@ impl Renderer {
                     panic!("if you start with \" you must End with \" to be able to print. Error on line {}", self.index + 1);
                 }
 
-                self.printmove(s.trim_end_matches('"').to_string())
+                self.printmove(&s.trim_end_matches('"').to_string())
             }
-            _ => self.printmove(cond.to_string()),
+            _ => self.printmove(&cond.to_string()),
         }
     }
 }
@@ -401,7 +401,7 @@ fn read_line() -> String {
     rv.replace("\r\n", "").replace("\n", "")
 }
 
-fn parse_variables(line: String) -> Vec<String> {
+fn parse_variables(line: &String) -> Vec<String> {
     let arr: nom::IResult<&str, Vec<&str>> = many0(preceded(
         take_until("@"),
         preceded(tag("@"), is_not(" \0+-<>=().!#:;^/\\@[]")),
@@ -437,7 +437,7 @@ fn main() {
     while story.index < story.lines.len() {
         let text = &story.lines[story.index];
 
-        if text == "" {
+        if text.is_empty() {
             story.index += 1;
             continue;
         }
@@ -455,7 +455,7 @@ fn main() {
             "^" => story.process_input(),
             "~" => story.input_wait(),
             "`" => story.clear_screen(),
-            _ => story.printmove(story.lines[story.index].clone()),
+            _ => story.printmove(&story.lines[story.index].clone()),
         }
     }
 }
