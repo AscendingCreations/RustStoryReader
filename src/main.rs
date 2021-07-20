@@ -51,8 +51,8 @@ impl Renderer {
         }
     }
 
-    fn process_variables(&self, text: &String) -> String {
-        let mut s = text.clone();
+    fn process_variables(&self, text: &str) -> String {
+        let mut s = String::from(text);
 
         for item in parse_variables(text).iter() {
             if !text.is_empty() {
@@ -226,7 +226,7 @@ impl Renderer {
         self.index += 1;
     }
 
-    fn printmove(&mut self, s: &String) {
+    fn printmove(&mut self, s: &str) {
         println!("{}", self.process_variables(s));
         self.index += 1;
     }
@@ -401,11 +401,11 @@ fn read_line() -> String {
     rv.replace("\r\n", "").replace("\n", "")
 }
 
-fn parse_variables(line: &String) -> Vec<String> {
+fn parse_variables(line: &str) -> Vec<String> {
     let arr: nom::IResult<&str, Vec<&str>> = many0(preceded(
         take_until("@"),
         preceded(tag("@"), is_not(" \0+-<>=().!#:;^/\\@[]")),
-    ))(&line[..]);
+    ))(line);
 
     match &arr {
         Ok(v) => {
